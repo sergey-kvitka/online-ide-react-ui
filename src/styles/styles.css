@@ -1,0 +1,165 @@
+body {
+    margin: 0;
+    height: 100%;
+}
+
+html {
+    height: 100%;
+}
+
+#root {
+    height: 100%;
+}
+
+.app-bar {
+    height: 7vh;
+    display: flex;
+    flex-direction: row !important;
+    align-items: center;
+}
+
+.modal-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.c-pointer {
+    cursor: pointer;
+}
+
+.w-65 {
+    width: 65%;
+}
+
+.w-35 {
+    width: 35%;
+}
+
+.no-style-link {
+    color: inherit !important;
+    cursor: pointer;
+}
+.no-style-link:hover {
+    color: inherit !important;
+}
+
+.project-item {
+    display: flex !important;
+    max-width: 600px;
+    font-size: 20px;
+}
+
+.project-item:hover {
+    background: #eef1ff;
+}
+
+.project-item .project-own {
+    color: #5d5d5d;
+    margin-left: 10px;
+}
+
+.custom-badge {
+    width: fit-content;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.project-item .project-role {
+    font-size: 24px;
+    align-items: end;
+    margin-top: 5px;
+    margin-right: 20px;
+}
+
+.mt-5 {
+    margin-top: 5px;
+}
+
+.project-item .project-type {
+    margin-left: 10px;
+    margin-top: 15px;
+}
+
+.badge-green {
+    background: #00b015 !important;
+}
+
+.badge-yellow {
+    background: #ffa42d !important;
+}
+
+.badge-red {
+    background: #ff0000 !important;
+}
+
+.badge-purple {
+    background: #b900e3 !important;
+}
+
+.badge-grey {
+    background: #888888 !important;
+}
+
+.project-item-half {
+    margin: 0;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.editor .ql-editor {
+    height: 100%;
+    background-color: white;
+    font-family: Consolas, serif;
+    font-size: 18px;
+    padding: 25px;
+    text-wrap: avoid;
+    white-space: pre;
+}
+
+.ql-container {
+    height: 100%;
+}
+
+.selected-file {
+    background: #8b8bfd;
+    color: white !important;
+}
+.selected-file:hover {
+    color: white !important;
+}
+.file:hover {
+    background: #d7f6d9;
+    color: black !important;
+}
+
+.editor {
+    height: 100%;
+    max-height: 100%;
+}
+
+.editor-panel {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    align-content: stretch;
+    padding: 0 20px;
+}
+
+.editor-panel * {
+    margin: 0;
+}
+
+.workspace-page {
+    height: 93vh;
+    max-height: 93vh;
+}
+
+.editor-container {
+    height: 100%;
+    max-height: 100%;
+}
