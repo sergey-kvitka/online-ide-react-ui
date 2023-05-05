@@ -20,4 +20,8 @@ export default class Methods {
     static fullDateTime(date) {
         return moment(date).format('LLL');
     }
+
+    static capitalize(string) {
+        return string.charAt(0).toUpperCase() + string.slice(1);
+    }
 }

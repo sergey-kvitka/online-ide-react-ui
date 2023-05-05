@@ -13,7 +13,7 @@ import {io} from "socket.io-client";
 import {Add, DeleteForever, PlayArrow, Settings} from "@mui/icons-material";
 import {v4 as uuid} from 'uuid';
 
-export default function Workspace() {
+export default function Workspace({currentProjectInfoSetter, isAuthorizedSetter}) {
 
     const {
         project_uuid: projectUUID,
@@ -70,6 +70,22 @@ export default function Workspace() {
                 setProjectInfo(projectInfo);
             });
     }
+
+    useEffect(() => {
+        isAuthorizedSetter(true);
+    }, []);
+
+    useEffect(() => {
+        if (!projectInfo) {
+            currentProjectInfoSetter({'page': 'LOADING'});
+            return;
+        }
+        currentProjectInfoSetter({
+            'projectName': projectInfo['name'],
+            'projectUUID': projectUUID,
+            'page': 'WORKSPACE'
+        });
+    }, [projectInfo, projectUUID]);
 
     useEffect(() => {
         getFiles();

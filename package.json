@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@eisberg-labs/mui-copy-field": "^4.0.2",
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
     "@mui/material": "^5.11.10",
@@ -14,24 +15,29 @@
     "highlight.js": "^11.7.0",
     "materialize-css": "^1.0.0-rc.2",
     "moment": "^2.29.4",
+    "monaco-editor-core": "^0.37.1",
     "next": "^13.2.4",
     "quill": "^1.3.7",
     "react": "^18.2.0",
     "react-bootstrap": "^2.7.2",
     "react-dom": "^18.2.0",
     "react-double-marquee": "^1.1.0",
+    "react-fast-marquee": "^1.5.2",
+    "react-monaco-editor": "^0.52.0",
     "react-router-dom": "^6.8.1",
     "react-scripts": "5.0.1",
     "react-syntax-highlighter": "^15.5.0",
     "socket.io-client": "^4.6.1",
     "uuid": "^9.0.0",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "webpack": "^5.79.0",
+    "webpack-cli": "^5.0.1"
   },
   "scripts": {
-    "start": "set PORT=3010 && react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "start": "set PORT=3010 && react-app-rewired start",
+    "build": "react-app-rewired build",
+    "test": "react-app-rewired test",
+    "eject": "react-app-rewired eject"
   },
   "eslintConfig": {
     "extends": [
@@ -52,6 +58,9 @@
     ]
   },
   "devDependencies": {
-    "@mui/icons-material": "^5.11.0"
+    "@mui/icons-material": "^5.11.0",
+    "copy-webpack-plugin": "^11.0.0",
+    "monaco-editor-webpack-plugin": "^7.0.1",
+    "react-app-rewired": "^2.2.1"
   }
 }

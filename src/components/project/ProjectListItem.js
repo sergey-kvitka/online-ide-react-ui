@@ -18,8 +18,8 @@ export default function ProjectListItem({projectInfo}) {
 
     return (
         <Link
-            className={'project-item flex-row border-1 text-nowrap no-style-link'}
-            sx={{border: 1}}
+            className={'project-item flex-row border-dark border border-opacity-50 text-nowrap no-style-link shadow'}
+            style={{borderRadius: 10}}
             underline={"none"}
             title={'Перейти к проекту'}
             href={`/project/workspace/${projectUUID}`}
@@ -29,6 +29,8 @@ export default function ProjectListItem({projectInfo}) {
                     className={'m-2'}
                     variant={'h4'}
                     component={'span'}
+                    title={projectInfo['name']}
+                    style={{overflow: 'hidden'}}
                 >
                     {projectInfo['name']}
                 </Typography>

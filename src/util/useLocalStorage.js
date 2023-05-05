@@ -14,7 +14,7 @@ function useLocalState(defaultValue, key, reset = false) {
     });
     useEffect(() => {
         localStorage.setItem(key, JSON.stringify(value));
-    }, [key, value]);
+    }, [key, value, reset, defaultValue]);
 
     return [value, setValue];
 }

@@ -6,6 +6,7 @@ export default class Constants {
 
     // * auth endpoints
     static IDE_API_LOGIN = 'auth/login';
+    static IDE_API_REGISTER = 'auth/register';
     static IDE_API_VALIDATE_JWT = 'auth/validate';
     // * project endpoints
     static IDE_API_GET_PROJECTS = 'project/yourProjects';
@@ -29,7 +30,8 @@ export default class Constants {
                 `Проект доступен всем пользователям, все пользователи \n` +
                 `могут вносить изменения в код и структуру проекта. \n` +
                 `Доступ можно получить по ссылке.`,
-            color: 'green'
+            color: 'green',
+            defaultProjectRole: 'EDITOR'
         },
         'PUBLIC_WATCH': {
             name: 'публичный',
@@ -38,7 +40,8 @@ export default class Constants {
                 `могут просматривать код и видеть все изменения проекта, \n` +
                 `но не могут вносить никаких изменений. Доступ можно \n` +
                 `получить по ссылке.`,
-            color: 'blue'
+            color: 'blue',
+            defaultProjectRole: 'WATCHER'
         },
         'PRIVATE': {
             name: 'приватный',
