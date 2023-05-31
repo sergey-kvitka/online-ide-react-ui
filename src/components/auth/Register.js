@@ -233,7 +233,7 @@ export default function Register({isAuthorizedSetter}) {
 
     useEffect(() => {
         if (jwt === '') return;
-        navigate('/projects');
+        navigate('/projects?afterAction=registration');
     }, [jwt]);
 
     return (
@@ -309,7 +309,7 @@ export default function Register({isAuthorizedSetter}) {
                 error={passwordError}
                 onBlur={() => {
                     validatePassword();
-                    validateRepeatPassword();
+                    if (repeatPassword.length !== 0) validateRepeatPassword();
                 }}
                 onChange={event => setPassword(event.target.value)}
             />

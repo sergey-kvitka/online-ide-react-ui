@@ -13,6 +13,16 @@ export default class Methods {
         }/${endpoint}`;
     }
 
+    static getExecApiURL(endpoint) {
+        return `${
+            Constants.EXEC_API_HOST
+        }${
+            Constants.EXEC_API_PORT
+        }/${
+            Constants.EXEC_API_CONTEXT_PATH
+        }/${endpoint}`;
+    }
+
     static datePast(date) {
         return moment(date).fromNow();
     }
@@ -23,5 +33,9 @@ export default class Methods {
 
     static capitalize(string) {
         return string.charAt(0).toUpperCase() + string.slice(1);
+    }
+
+    static uncapitalize(string) {
+        return string.charAt(0).toLowerCase() + string.slice(1);
     }
 }

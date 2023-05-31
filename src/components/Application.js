@@ -7,6 +7,8 @@ import ProjectInfo from "./project/ProjectInfo";
 import Workspace from "./project/Workspace";
 import {useState} from "react";
 import Register from "./auth/Register";
+import MyDiffViewer from "./editor/MyDiffViewer";
+import CodeGenerator from "./editor/CodeGenerator";
 
 export default function Application() {
 
@@ -27,11 +29,12 @@ export default function Application() {
             <Route path='/login' element={<Login isAuthorizedSetter={setIsAuthorizedValue}/>}/>
             <Route path='/register' element={<Register isAuthorizedSetter={setIsAuthorizedValue}/>}/>
 
-            <Route path={'/'} exact element={<>test</>}/>
+            <Route path={'/'} exact element={<></>}/>
 
             <Route path='/projects' element={
                 <PrivateRoute>
                     <ProjectList
+                        currentProjectInfoSetter={setProjectInfoValue}
                         isAuthorizedSetter={setIsAuthorizedValue}
                     />
                 </PrivateRoute>

@@ -7,8 +7,6 @@ const projectPages = ['WORKSPACE', 'PROJECT_INFO'];
 
 export default function Header({currentProjectInfo, isAuthorized}) {
 
-    console.log('\t"Header" update');
-
     const [headerText, setHeaderText] = useState(defaultText);
     const [page, setPage] = useState('');
     const [projectUUID, setProjectUUID] = useState(null);

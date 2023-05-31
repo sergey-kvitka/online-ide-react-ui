@@ -1,7 +1,13 @@
 import {IconButton} from "@mui/material";
 import {Clear} from "@mui/icons-material";
 
-export default function ModalCloseIcon({closeFunction}) {
+export default function ModalCloseIcon({
+                                           closeFunction,
+                                           margin = '8px',
+                                           title = 'Закрыть',
+                                           opacity = 'unset',
+                                           background = 'unset'
+                                       }) {
 
     return (
         <div
@@ -25,9 +31,11 @@ export default function ModalCloseIcon({closeFunction}) {
                         position: 'absolute',
                         right: 0,
                         padding: 0,
-                        margin: 8
+                        margin: margin,
+                        opacity: opacity,
+                        background: background
                     }}
-                    title={'Закрыть'}
+                    title={title}
                     className={'modal-close-icon'}
                     onClick={closeFunction}
                 >

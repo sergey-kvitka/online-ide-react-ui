@@ -8,6 +8,9 @@ import {useParams} from "react-router-dom";
 
 const SAVE_INTERVAL_MS = 500;
 
+/**
+* @deprecated
+*/
 export default function FileEditor() {
 
     const {file_uuid: documentId} = useParams();

@@ -1,5 +1,5 @@
 import {useEffect, useState} from 'react';
-import {Navigate, useNavigate, useParams} from "react-router-dom";
+import {useNavigate, useParams} from "react-router-dom";
 import Methods from "../../util/Methods";
 import Constants from "../../util/Constants";
 import {useLocalState} from "../../util/useLocalStorage";
@@ -24,14 +24,13 @@ import ProjectUserInfo from "./ProjectUserInfo";
 import {Search, Settings} from "@mui/icons-material";
 import UserSearch from "../UserSearch";
 import ModalCloseIcon from "../ModalCloseIcon";
+import ProjectMonitoring from "./ProjectMonitoring";
 
 export default function ProjectInfo({currentProjectInfoSetter, isAuthorizedSetter}) {
 
     const {project_uuid: projectUUID} = useParams();
 
     const [jwt,] = useLocalState('', Constants.JWT_LS_KEY);
-
-    const [ok, setOk] = useState(true);
 
     const [projectInfo, setProjectInfo] = useState(null);
     const [myInfo, setMyInfo] = useState(null);
@@ -70,6 +69,10 @@ export default function ProjectInfo({currentProjectInfoSetter, isAuthorizedSette
     const [newProjectType, setNewProjectType] = useState('');
     const [newProjectDescription, setNewProjectDescription] = useState('');
 
+    const [stopMonitor, setStopMonitor] = useState(false);
+    const [hidePage, setHidePage] = useState(false);
+    const [monitorMessage, setMonitorMessage] = useState('');
+
     const navigate = useNavigate();
 
     function getProjectInfo() {
@@ -80,15 +83,26 @@ export default function ProjectInfo({currentProjectInfoSetter, isAuthorizedSette
             .then(response => {
                 return (response.status === 200)
                     ? response.json()
-                    : Promise.reject();
+                    : Promise.reject(response);
             })
             .then(projectInfo => {
-                setProjectInfo(projectInfo);
+                setProjectInfo(projectInfo)
+                getMyInfo();
+                getProjectUsers();
+                getProjectRole();
             })
-            .catch(() => {
-                setOk(false);
-            });
+            .catch(error => error.json()
+                .then(error => {
+                    const message = error['message'];
+                    if (['projectDoesNotExist', 'notAParticipant'].includes(message)) {
+                        navigate(`/projects?afterAction=${message}`);
+                        return;
+                    }
+                    navigate(`/projects?afterAction=error`);
+                }));
     }
+
+    // navigate(`/projects?afterAction=projectDoesNotExist`);
 
     function getMyInfo() {
         fetch(Methods.getIdeApiURL(`user/info`), {
@@ -218,16 +232,32 @@ export default function ProjectInfo({currentProjectInfoSetter, isAuthorizedSette
             });
     }
 
+    const handleMonitorMessage = (message) => {
+        setMonitorMessage(message);
+    }
+
     useEffect(() => {
         isAuthorizedSetter(true);
     }, []);
 
     useEffect(() => {
+        if (!monitorMessage || monitorMessage === '') return;
+        if (['projectDoesNotExist', 'notAParticipant'].includes(monitorMessage)) {
+            setStopMonitor(true);
+            navigate(`/projects?afterAction=${monitorMessage}Anymore`);
+            return;
+        }
+        if (monitorMessage === 'roleChanged') {
+            setStopMonitor(true);
+            setHidePage(true);
+        }
+    }, [monitorMessage]);
+
+    useEffect(() => {
         if (!projectUsers || !myInfo || !projectRole) return;
         let searchStr = projectUserFilter.trim().toLowerCase();
         let pUsers = projectUsers.filter(pu => (searchStr === '')
-            ? true
-            : pu['userInfo']['username'].toLowerCase().includes(searchStr));
+            ? true : pu['userInfo']['username'].toLowerCase().includes(searchStr));
         pUsers.sort((pu1, pu2) => {
             const username1 = pu1['userInfo']['username'];
             const username2 = pu2['userInfo']['username'];
@@ -271,7 +301,7 @@ export default function ProjectInfo({currentProjectInfoSetter, isAuthorizedSette
 
     useEffect(() => {
         if (!projectInfo) {
-            currentProjectInfoSetter({'page': 'LOADING'})
+            currentProjectInfoSetter({'page': 'LOADING'});
             return;
         }
         currentProjectInfoSetter({
@@ -284,9 +314,6 @@ export default function ProjectInfo({currentProjectInfoSetter, isAuthorizedSette
     useEffect(() => {
         async function init() {
             getProjectInfo();
-            getMyInfo();
-            getProjectUsers();
-            getProjectRole();
         }
 
         init().then();
@@ -309,8 +336,47 @@ export default function ProjectInfo({currentProjectInfoSetter, isAuthorizedSette
     }, initDataDeps);
 
     // noinspection JSValidateTypes
-    return !ok ? <Navigate to={'/projects'}/> : !initData ? <></> : (
+    return hidePage ? (
+        /* if (monitorMessage === 'roleChanged') */
+        <Snackbar // ? ROLE CHANGED
+            open={hidePage}
+            anchorOrigin={{vertical: 'top', horizontal: 'center'}}
+            sx={{marginTop: '8vh'}}
+        >
+            <Alert
+                severity={'warning'}
+                variant={"outlined"}
+                sx={{width: '100%'}}
+                className={'d-flex flex-row align-items-center'}
+            >
+                <div className={'d-flex flex-column align-items-center'}>
+                    <Typography variant={'h6'} textAlign={'center'} style={{margin: '20px 10px'}}>
+                        Ваша роль в данном проекте была изменена создателем или<br/>
+                        администратором проекта. Во избежание ошибок и для <br/>
+                        актуализации данных проекта необходимо обновить страницу.
+                    </Typography>
+                    <Button
+                        sx={{mb: 1}}
+                        color={"warning"}
+                        variant={"contained"}
+                        onClick={() => {
+                            window.location.reload();
+                        }}
+                    >Обновить страницу</Button>
+                </div>
+            </Alert>
+        </Snackbar>
+    ) : (!initData ? <></> : (
         <Container>
+            {(projectUUID && projectRole && jwt) ?
+                <ProjectMonitoring
+                    projectUUID={projectUUID}
+                    jwt={jwt}
+                    currentProjectRole={projectRole['projectRole']}
+                    messageHandler={handleMonitorMessage}
+                    stop={stopMonitor}
+                /> : <></>}
+
             <div className={'proj-info'}>
                 <br/><h5>Проект</h5>
                 <div className={'d-flex flex-row proj-title align-items-center'}>
@@ -355,6 +421,7 @@ export default function ProjectInfo({currentProjectInfoSetter, isAuthorizedSette
                         {projectTypeInfo.name.toUpperCase()}
                     </Badge>
                 </Typography>
+                {projectInfo['projectBuildType']}
                 <Typography variant={'h5'} style={{margin: '10px 0 10px'}}>Описание проекта:</Typography>
                 {projectDescription === ''
                     ? <span style={{margin: '0 15px', fontSize: 20}} className={'opacity-75'}><i>Нет описания</i></span>
@@ -633,5 +700,5 @@ export default function ProjectInfo({currentProjectInfoSetter, isAuthorizedSette
                 >{failEditProjectToastMessage}</Alert>
             </Snackbar>
         </Container>
-    );
+    ));
 };
