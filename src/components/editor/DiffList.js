@@ -2,8 +2,9 @@ import {useEffect, useState} from 'react';
 import Methods from "../../util/Methods";
 import {useLocalState} from "../../util/useLocalStorage";
 import Constants from "../../util/Constants";
+import DiffElement from "./DiffElement";
 
-export default function DiffList({projectUUID, fileId}) {
+export default function DiffList({canRestore, projectUUID, fileId, restoreHandler}) {
 
     const [jwt,] = useLocalState('', Constants.JWT_LS_KEY);
 
@@ -26,15 +27,13 @@ export default function DiffList({projectUUID, fileId}) {
             });
     }
 
-    return <div>
-        {
-            diffs.map(diff => {
-                return <div className={'border border-dark'}>
-                    <p>{Methods.fullDateTime(new Date(diff['dateBefore']))}</p>
-                    <p>{Methods.fullDateTime(new Date(diff['dateAfter']))}</p>
-                    <p>{diff['userNames']['username']}</p>
-                </div>
-            })
-        }
-    </div>;
+    return <>
+        <div className={'w-75'} style={{margin: '0 auto'}}>
+            {
+                diffs.map(diff => {
+                    return <DiffElement canRestore={canRestore} key={diff['dateAfter']} diff={diff} restoreHandler={restoreHandler}/>
+                })
+            }
+        </div>
+    </>;
 };

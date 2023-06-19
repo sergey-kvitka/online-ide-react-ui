@@ -134,7 +134,7 @@ export default function CodeGenerator({fileName, codeGenerateHandler}) {
             'builderLike': builderLike,
             'createToString': createToString
         }
-        codeGenerateHandler({'replace': replaceExistingCode, 'code': generateJavaCode(options)});
+        codeGenerateHandler({'replace': replaceExistingCode, 'code': generateJavaCode(options), 'source': 'codeGen'});
     }
 
     return {
@@ -142,12 +142,11 @@ export default function CodeGenerator({fileName, codeGenerateHandler}) {
             <Typography variant={'h3'} style={{marginBottom: 10}}>Создание Java-класса</Typography>
             <div style={{padding: '15px 10px 10px', border: '1px solid #666666', borderRadius: 10, width: '75%'}}>
                 <TextField
-                    style={{fontFamily: 'Consolas, serif'}}
                     label={'Описание класса'}
                     fullWidth
                     sx={{
-                        '.MuiInputBase-input': {fontSize: 20, fontFamily: 'Consolas, serif'},
-                        '.MuiInputAdornment-positionEnd *': {fontSize: 20, fontFamily: 'Consolas, serif'}
+                        '.MuiInputBase-input': {fontSize: 20, fontFamily: 'Consolas, "Courier New", monospace'},
+                        '.MuiInputAdornment-positionEnd *': {fontSize: 20, fontFamily: 'Consolas, "Courier New", monospace'}
                     }}
                     value={classDefinition}
                     InputProps={{
@@ -413,7 +412,7 @@ const createToString = (fields, className) => {
         return `${name}=${(f['type'] === 'String') ? `'" + ${name} + '\\''` : `" + ${name}`} +`;
     }).join('\n                ", ');
     return `    @Override\n    public String toString() {\n        return "${className}{" +`
-        + `\n                "${toStringBody} +\n                '}';\n    }\n`;
+        + `\n                "${toStringBody}\n                '}';\n    }\n`;
 };
 
 const createEquals = (fields, className, hasGeneric) => {

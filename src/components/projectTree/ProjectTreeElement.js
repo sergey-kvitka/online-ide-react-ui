@@ -6,6 +6,7 @@ import {
     Alert,
     Box,
     Button,
+    CircularProgress,
     IconButton,
     InputAdornment,
     Modal,
@@ -15,7 +16,7 @@ import {
     Typography
 } from "@mui/material";
 import {Add, ChevronRight, Delete, DriveFileRenameOutlineRounded} from "@mui/icons-material";
-import {useNavigate} from "react-router-dom";
+import {useNavigate, useParams} from "react-router-dom";
 import ModalCloseIcon from "../ModalCloseIcon";
 import {useState} from "react";
 import Methods from "../../util/Methods";
@@ -33,6 +34,10 @@ export default function ProjectTreeElement({
                                                fileUpdateHandler,
                                                projectRole
                                            }) {
+
+    const {
+        project_uuid: projectUUID
+    } = useParams();
 
     const id = tree['file/id'];
     const path = `${tree['file/path']}`;
@@ -59,7 +64,7 @@ export default function ProjectTreeElement({
     const [newFolderError, setNewFolderError] = useState(false);
     const [newFolderHelp, setNewFolderHelp] = useState('');
 
-    const [renameFileName, setRenameFileName] = useState(isFolder ? fileName : fileName.slice(0, -5));
+    const [renameFileName, setRenameFileName] = useState(fileName);
     const [renameFileError, setRenameFileError] = useState(false);
     const [renameFileHelp, setRenameFileHelp] = useState('');
 
@@ -71,16 +76,24 @@ export default function ProjectTreeElement({
     const [toastMessage, setToastMessage] = useState('');
     const [toastSeverity, setToastSeverity] = useState('success');
 
+    const [uploadFileName, setUploadFileName] = useState(null);
+    const [uploadFile, setUploadFile] = useState(null);
+    const [uploadFileSaving, setUploadFileSaving] = useState(false);
+
     function createFile(type) {
         if (!['file', 'folder'].includes(type)) return;
-        if (!validate(type, 'create')) return;
         const isFile = type === 'file';
+        if (!validate(type, 'create')) return;
+        if (isFile && uploadFile) {
+            createFileByUpload();
+            return;
+        }
 
         let name;
         if (isFile) name = newFileName;
         else if (type === 'folder') name = newFolderName;
         name = name.trim();
-        if (isFile && !name.endsWith('.java')) name += '.java';
+        //if (isFile && !name.endsWith('.java')) name += '.java';
 
         let body = {
             projectUUID: projectInfo['uuid'],
@@ -135,7 +148,7 @@ export default function ProjectTreeElement({
         if (isFile) name = renameFileName;
         else if (type === 'folder') name = renameFolderName;
         name = name.trim();
-        if (isFile && !name.endsWith('.java')) name += '.java';
+        // if (isFile && !name.endsWith('.java')) name += '.java';
 
         const newPath = `${getPathExceptName(path)}/${name}`;
 
@@ -189,16 +202,18 @@ export default function ProjectTreeElement({
         else if (type === 'file' && action === 'rename') value = renameFileName;
         else if (type === 'folder' && action === 'rename') value = renameFolderName;
         value = value.trim();
-        if (value.endsWith('.java')) value = value.slice(0, -5);
+        const isJavaFile = (value.endsWith('.java'));
+        let javaFileName;
+        if (isJavaFile) javaFileName = value.slice(0, -5);
         const ofFile = {'file': 'файла', 'folder': 'папки'}
         let help = '';
 
         if (value === '')
             help = `Название ${ofFile[type]} не может быть пустым`;
-        else if (type === 'folder' && /[\\/:*?"<>|]/.test(value))
-            help = `Название папки не должно содержать следующих знаков: \\ / : * ? " < > |`;
-        else if (type === 'file' && !(/^[a-zA-Zа-яА-ЯёЁ0-9_$]{1,100}$/.test(value)))
-            help = 'Название файла может состоять только из букв латиницы и кириллицы, цифр и символов _ и $';
+        else if (/[\\/:*?"<>|]/.test(value))
+            help = `Название ${ofFile['type']} не должно содержать следующих знаков: \\ / : * ? " < > |`;
+        else if (type === 'file' && isJavaFile && !(/^[a-zA-Zа-яА-ЯёЁ0-9_$]{1,100}$/.test(javaFileName)))
+            help = 'Название Java-файла может состоять только из букв латиницы и кириллицы, цифр и символов _ и $';
 
         let error = (help !== '');
         if (type === 'file' && action === 'create') {
@@ -233,6 +248,86 @@ export default function ProjectTreeElement({
                 setShowToast(true);
                 fileUpdateHandler();
                 setDeleteFileOpen(false);
+            });
+    }
+
+    const handleFileUpload = (e) => {
+        if (!e.target.files) return;
+        const file = e.target.files[0];
+        const {name} = file;
+        setUploadFileName(name);
+        setUploadFile(file);
+        setNewFileName(name);
+    };
+
+    const handleClearUpload = () => {
+        setUploadFileName(null);
+        setUploadFile(null);
+        setNewFileName('');
+    };
+
+    const handleDownload = () => {
+        fetch(Methods.getIdeApiURL(`file/getMultipartFile/${contentId}`), {
+            method: 'GET',
+            headers: {'Content-Type': 'application/json', 'Authorization': jwt},
+        })
+            .then(response => {
+                return (response.status === 200)
+                    ? response.json()
+                    : Promise.reject(response);
+            })
+            .then(response => {
+                const link = document.createElement('a');
+                link.download = getShortName(path);
+                const blob = new Blob([response['content']], {type: 'text/plain'});
+                link.href = window.URL.createObjectURL(blob);
+                link.click();
+            })
+            .catch(response => {
+                return response.json()
+                    .then(error => {
+                        const message = error['message'];
+                        setToastMessage(message);
+                        setToastSeverity('error');
+                    });
+            });
+    };
+
+    const createFileByUpload = () => {
+        const formData = new FormData();
+        // noinspection JSCheckFunctionSignatures
+        formData.append("file", uploadFile);
+        formData.append("filepath", path + '/' + newFileName);
+
+        setUploadFileSaving(true);
+        fetch(Methods.getIdeApiURL(`file/createFileByUpload/${projectUUID}`), {
+            method: 'PUT',
+            headers: {'Authorization': jwt},
+            body: formData
+        }).then(response => {
+            return (response.status === 200)
+                ? response.json()
+                : Promise.reject(response);
+        })
+            .then(response => {
+                setToastMessage(`Файл успешно создан!`);
+                setToastSeverity('success');
+                setShowToast(true);
+                fileUpdateHandler();
+                setAddFileOpen(false);
+                handleClearUpload();
+                documentIdSetter(response['contentId']);
+            })
+            .catch(response => {
+                return response.json()
+                    .then(error => {
+                        const message = error['message'];
+                        setNewFileError(true);
+                        setNewFileHelp(message);
+                    });
+            })
+            .finally(() => {
+                setUploadFileSaving(false);
             });
     }
 
@@ -345,15 +440,14 @@ export default function ProjectTreeElement({
                                 </TabList>
                             </Box>
                             <TabPanel value={'file'} className={'pb-0 pt-5'}>
-                                <div style={{display: 'flex'}} className={'flex-column justify-content-center gap-5'}>
+                                <div style={{display: 'flex'}} className={'flex-column justify-content-center gap-2'}>
                                     <TextField
                                         fullWidth
                                         className={'input-underline'}
                                         InputProps={{
                                             startAdornment:
-                                                <InputAdornment position="start">{path + '/'}</InputAdornment>,
-                                            endAdornment:
-                                                <InputAdornment position="end">.java</InputAdornment>
+                                                <InputAdornment position="start">{path + '/'}</InputAdornment>
+                                            //, endAdornment: <InputAdornment position="end">.java</InputAdornment>
                                         }}
                                         label="Путь файла в проекте"
                                         value={newFileName}
@@ -361,12 +455,54 @@ export default function ProjectTreeElement({
                                         error={newFileError}
                                         helperText={newFileHelp}
                                     />
+                                    <Typography variant={'h6'} textAlign={"center"} style={{color: '#888888'}}>
+                                        или
+                                    </Typography>
                                     <Button
-                                        variant={"contained"}
-                                        size={"large"}
-                                        fullWidth={false}
-                                        onClick={() => createFile('file')}
-                                    >Создать файл</Button>
+                                        variant="contained"
+                                        component="label"
+                                        style={{background: "#08086e"}}
+                                    >
+                                        Загрузить файл
+                                        <input
+                                            type="file"
+                                            hidden
+                                            onChange={handleFileUpload}
+                                        />
+                                    </Button>
+                                    {
+                                        uploadFileName ?
+                                            <Typography style={{marginBottom: -10}} variant={'body1'}
+                                                        textAlign={"center"}>
+                                                <b style={{color: '#0a5e10'}}>Файл <u>{uploadFileName}</u> загружен{' '}
+                                                    <span
+                                                        title={'Удалить загруженный файл'}
+                                                        style={{
+                                                            fontSize: 14,
+                                                            cursor: "pointer"
+                                                        }}
+                                                        onClick={handleClearUpload}
+                                                    >❌</span>
+                                                </b>
+                                            </Typography> : <></>
+                                    }
+
+                                    <div
+                                        className={'d-flex flex-row align-items-center'}
+                                        style={{marginTop: 35, height: 42}}
+                                    >
+                                        <Button
+                                            variant={"contained"}
+                                            size={"large"}
+                                            style={{flexGrow: 10}}
+                                            onClick={() => createFile('file')}
+                                        >Создать файл</Button>
+                                        {uploadFileSaving
+                                            ? <CircularProgress
+                                                style={{marginLeft: 15}}
+                                            />
+                                            : null}
+                                    </div>
                                 </div>
                             </TabPanel>
                             <TabPanel value={'folder'}>
@@ -411,8 +547,8 @@ export default function ProjectTreeElement({
                         className={'input-underline'}
                         InputProps={{
                             startAdornment:
-                                <InputAdornment position="start">{getPathExceptName(path) + '/'}</InputAdornment>,
-                            endAdornment: isFolder ? null : <InputAdornment position="end">.java</InputAdornment>
+                                <InputAdornment position="start">{getPathExceptName(path) + '/'}</InputAdornment>
+                            //,endAdornment: isFolder ? null : <InputAdornment position="end">.java</InputAdornment>
                         }}
                         label="Путь папки в проекте"
                         value={isFolder ? renameFolderName : renameFileName}
@@ -424,12 +560,23 @@ export default function ProjectTreeElement({
                         error={isFolder ? renameFolderError : renameFileError}
                         helperText={isFolder ? renameFolderHelp : renameFileHelp}
                     />
-                    <Button
-                        variant={"contained"}
-                        size={"large"}
-                        fullWidth={false}
-                        onClick={() => renameFile(isFolder ? 'folder' : 'file')}
-                    >Переименовать {isFolder ? 'папку' : 'файл'}</Button>
+                    <div className={'d-flex w-75 gap-lg-4 flex-row-reverse justify-content-around align-items-center'}>
+                        <Button
+                            style={{flexGrow: 2}}
+                            variant={"contained"}
+                            size={"large"}
+                            fullWidth={false}
+                            onClick={() => renameFile(isFolder ? 'folder' : 'file')}
+                        >Переименовать {isFolder ? 'папку' : 'файл'}</Button>
+                        {!isFolder ? <Button
+                            style={{flexGrow: 2}}
+                            variant={"contained"}
+                            color={'success'}
+                            size={"large"}
+                            fullWidth={false}
+                            onClick={handleDownload}
+                        >Скачать файл</Button> : null}
+                    </div>
                 </div>
             </div>
         </Modal>

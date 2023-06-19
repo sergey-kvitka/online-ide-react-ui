@@ -1,5 +1,7 @@
 export default class Constants {
 
+    static SELF_URL = 'http://localhost:3010';
+
     static IDE_API_HOST = 'http://localhost:';
     static IDE_API_PORT = '8800';
     static IDE_API_CONTEXT_PATH = 'ide/api';

@@ -30,13 +30,17 @@ export default function ProjectList({isAuthorizedSetter, currentProjectInfoSette
     const [searchParams, setSearchParams] = useSearchParams();
 
     const [jwt,] = useLocalState('', Constants.JWT_LS_KEY);
+    const [myInfo, setMyInfo] = useState(null);
     const [projectList, setProjectList] = useState([]);
+
+    const [onlyMyProjects, setOnlyMyProjects] = useState(false);
+    const [projectSearch, setProjectSearch] = useState('');
 
     const [listElements, setListElements] = useState([]);
 
     const [openProjectCreation, setOpenProjectCreation] = useState(false);
 
-    const [newProjectName, setNewProjectName] = useState('Новый проект');
+    const [newProjectName, setNewProjectName] = useState('untitled');
     const [newProjectType, setNewProjectType] = useState(Object.keys(Constants.PROJECT_TYPE_INFO)[0]);
     const [newProjectDescription, setNewProjectDescription] = useState('');
     const [newProjectBuildType, setNewProjectBuildType] = useState(Constants.BUILD_TYPE_INFO.DEFAULT.key);
@@ -53,6 +57,15 @@ export default function ProjectList({isAuthorizedSetter, currentProjectInfoSette
     const [notAParticipantAlert, setNotAParticipantAlert] = useState(false);
     const [notAParticipantAnymoreAlert, setNotAParticipantAnymoreAlert] = useState(false);
 
+    function getMyInfo() {
+        fetch(Methods.getIdeApiURL('user/info'), {
+            method: 'GET',
+            headers: {'Content-Type': 'application/json', 'Authorization': jwt}
+        })
+            .then(response => response.json())
+            .then(info => setMyInfo(info));
+    }
+
     function getProjectList(createdBefore = false) {
         fetch(Methods.getIdeApiURL(Constants.IDE_API_GET_PROJECTS), {
             headers: {'Content-Type': 'application/json', 'Authorization': jwt},
@@ -66,7 +79,7 @@ export default function ProjectList({isAuthorizedSetter, currentProjectInfoSette
                 if (createdBefore) {
                     setOpenProjectCreation(false);
                     setSuccessCreateProjectToast(true);
-                    setNewProjectName('Новый проект');
+                    setNewProjectName('untitled');
                     setNewProjectDescription('');
                 }
             });
@@ -103,8 +116,13 @@ export default function ProjectList({isAuthorizedSetter, currentProjectInfoSette
 
     useEffect(() => {
         isAuthorizedSetter(true);
-        currentProjectInfoSetter({'page': 'NONE'});
     }, []);
+
+    useEffect(() => {
+        let result = {'page': 'NONE'};
+        if (!(!myInfo)) result = {...result, 'user': myInfo};
+        currentProjectInfoSetter(result);
+    }, [myInfo]);
 
     useEffect(() => {
         if (!searchParams) return;
@@ -141,17 +159,24 @@ export default function ProjectList({isAuthorizedSetter, currentProjectInfoSette
 
     useEffect(() => {
         getProjectList();
+        getMyInfo();
     }, []);
 
     useEffect(() => {
         let i = 0;
-        const listElements = (projectList.sort((proj1, proj2) => {
-            return new Date(proj2['lastChange']) - new Date(proj1['lastChange'])
-        })).map(projectInfo =>
+        const listElements = (
+            projectList
+                .filter(project => (!onlyMyProjects || (onlyMyProjects && project['projectRole'] === 'CREATOR')) &&
+                    (projectSearch.trim() === ''
+                        || (project['name'].toLowerCase().includes(projectSearch.trim().toLowerCase()))))
+                .sort((proj1, proj2) => {
+                    return new Date(proj2['lastChange']) - new Date(proj1['lastChange'])
+                })
+        ).map(projectInfo =>
             <ProjectListItem className={'border'} key={i++} projectInfo={projectInfo}
                              projectLeaveHandler={projectLeaveHandler}/>);
         setListElements(listElements);
-    }, [projectList]);
+    }, [projectList, onlyMyProjects, projectSearch]);
 
     const projectLeaveHandler = (projectUUID) => {
         setProjectList(prev => prev.filter(project => project['projectUUID'] !== projectUUID));
@@ -180,13 +205,12 @@ export default function ProjectList({isAuthorizedSetter, currentProjectInfoSette
                             </InputAdornment>
                         ),
                     }}
-                    value={''}
-                    onChange={event => {
-                        // setProjectUserFilter(event.target.value);
-                    }}
+                    value={projectSearch}
+                    onChange={e => setProjectSearch(e.target.value)}
                 />
                 <div className={'d-flex flex-row align-items-center'}>
-                    <Checkbox/><Typography style={{marginLeft: 7}} variant={'h5'}>Только мои проекты</Typography>
+                    <Checkbox checked={onlyMyProjects} onChange={e => setOnlyMyProjects(e.target.checked)}/>
+                    <Typography style={{marginLeft: 7}} variant={'h5'}>Только мои проекты</Typography>
                 </div>
             </div>
             <Stack direction={'vertical'} gap={4} style={{marginBottom: 25}}>

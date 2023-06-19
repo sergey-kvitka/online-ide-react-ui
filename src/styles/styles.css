@@ -384,3 +384,8 @@ html {
 .code-gen-button:hover {
     background: #ececec;
 }
+
+.diff-view * {
+    font-size: 18px !important;
+    font-family: Consolas, serif !important;
+}

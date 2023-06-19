@@ -300,16 +300,16 @@ export default function ProjectInfo({currentProjectInfoSetter, isAuthorizedSette
     }, [projectUsers, myInfo, projectRole, projectUserFilter]);
 
     useEffect(() => {
-        if (!projectInfo) {
-            currentProjectInfoSetter({'page': 'LOADING'});
-            return;
-        }
-        currentProjectInfoSetter({
+        let result;
+        if (!projectInfo) result = ({'page': 'LOADING'});
+        else result = ({
             'projectName': projectInfo['name'],
             'projectUUID': projectUUID,
             'page': 'PROJECT_INFO'
         });
-    }, [projectInfo, projectUUID]);
+        if (!(!myInfo)) result = {...result, 'user': myInfo};
+        currentProjectInfoSetter(result);
+    }, [projectInfo, projectUUID, myInfo]);
 
     useEffect(() => {
         async function init() {
@@ -421,7 +421,17 @@ export default function ProjectInfo({currentProjectInfoSetter, isAuthorizedSette
                         {projectTypeInfo.name.toUpperCase()}
                     </Badge>
                 </Typography>
-                {projectInfo['projectBuildType']}
+
+                <Typography variant={'h5'} style={{marginTop: 8}}>
+                <span>Тип сборки проекта: </span>
+                <Badge
+                    title={Constants.BUILD_TYPE_INFO[projectInfo['projectBuildType']].description}
+                    className={`custom-badge mt-1 badge-${Constants.BUILD_TYPE_INFO[projectInfo['projectBuildType']].color}`}
+                >
+                    {Constants.BUILD_TYPE_INFO[projectInfo['projectBuildType']].name.toUpperCase()}
+                </Badge>
+                </Typography>
+
                 <Typography variant={'h5'} style={{margin: '10px 0 10px'}}>Описание проекта:</Typography>
                 {projectDescription === ''
                     ? <span style={{margin: '0 15px', fontSize: 20}} className={'opacity-75'}><i>Нет описания</i></span>
@@ -551,6 +561,15 @@ export default function ProjectInfo({currentProjectInfoSetter, isAuthorizedSette
                                 onChange={event => setNewProjectName(event.target.value)}
                             />
                         </div>
+                        {projectInfo['groupId'] ?
+                        <div style={{width: '80%', margin: '0 auto'}}>
+                            <TextField
+                                label={'Название проекта'}
+                                className={'new-project-name-input'}
+                                fullWidth
+                                value={projectInfo['groupId']}
+                            />
+                        </div> : <></>}
                         <TextField
                             key={'description'}
                             type={"text"}

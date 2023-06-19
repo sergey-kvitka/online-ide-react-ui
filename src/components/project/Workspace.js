@@ -46,7 +46,22 @@ export default function Workspace({currentProjectInfoSetter, isAuthorizedSetter}
     const [socket, setSocket] = useState();
     const [jwt,] = useLocalState('', Constants.JWT_LS_KEY);
 
+    const [myInfo, setMyInfo] = useState(null);
+
     const [documentId, setDocumentId] = useState(docId);
+
+    function getMyInfo() {
+        fetch(Methods.getIdeApiURL(`user/info`), {
+            headers: {'Content-Type': 'application/json', 'Authorization': jwt},
+            method: 'GET'
+        })
+            .then(response => {
+                return response.json();
+            })
+            .then(myInfo => {
+                setMyInfo(myInfo);
+            });
+    }
 
     const setDocId = id => {
         if (documentId === id) return;
@@ -156,7 +171,9 @@ export default function Workspace({currentProjectInfoSetter, isAuthorizedSetter}
 
     const codeGenerateHandler = options => {
         setCodeGenerateOptions(options);
-        setOpenCodeGen(false);
+        const source = options['source'];
+        if (source === 'codeGen') setOpenCodeGen(false);
+        else if (source === 'diff') setHistoryOpen(false);
     };
 
     useEffect(() => {
@@ -256,19 +273,20 @@ export default function Workspace({currentProjectInfoSetter, isAuthorizedSetter}
     }, []);
 
     useEffect(() => {
-        if (!projectInfo) {
-            currentProjectInfoSetter({'page': 'LOADING'});
-            return;
-        }
-        currentProjectInfoSetter({
+        let result;
+        if (!projectInfo) result = ({'page': 'LOADING'});
+        else result = ({
             'projectName': projectInfo['name'],
             'projectUUID': projectUUID,
             'page': 'WORKSPACE'
         });
-    }, [projectInfo, projectUUID]);
+        if (!(!myInfo)) result = {...result, 'user': myInfo};
+        currentProjectInfoSetter(result);
+    }, [projectInfo, projectUUID, myInfo]);
 
     useEffect(() => {
         getProjectInfo();
+        getMyInfo();
     }, []);
 
     useEffect(() => {
@@ -475,7 +493,8 @@ export default function Workspace({currentProjectInfoSetter, isAuthorizedSetter}
                         <div style={{height: 45}} className={'editor-panel'}>
                             <h5 className={'flex-lg-grow-1'}>{selectedFile ? selectedFile['path'] : ''}</h5>
 
-                            {selectedFile && codeGenAvailable(selectedFile['path'])
+                            {(((projectRole && !['COMMENTER', 'WATCHER'].includes(projectRole['projectRole'])))
+                                && selectedFile && codeGenAvailable(selectedFile['path']))
                                 ? <div
                                     className={'d-flex flex-row align-items-center code-gen-button'}
                                     style={{cursor: "pointer", marginRight: 30}}
@@ -509,7 +528,7 @@ export default function Workspace({currentProjectInfoSetter, isAuthorizedSetter}
                                 </> : <></>
                             }
 
-                            {selectedFile ?
+                            {(selectedFile) ?
                                 <IconButton
                                     style={{marginRight: 40}}
                                     title={'Посмотреть историю изменений'}
@@ -679,8 +698,19 @@ export default function Workspace({currentProjectInfoSetter, isAuthorizedSetter}
                                                 <Typography style={{marginTop: 20}} variant={'h6'}>
                                                     Время работы: {execResult['executionTime']} мс
                                                 </Typography>
-                                                <Typography style={{marginTop: 10}} variant={'h6'}>Код завершения: <b
-                                                    style={{color: "#00aa00"}}>{execResult['exitCode']}</b></Typography>
+                                                {
+                                                    execResult['hasExitCode'] ?
+                                                        <Typography style={{marginTop: 10}} variant={'h6'}>Код
+                                                            завершения: <b
+                                                                style={{
+                                                                    color: execResult['exitCode'] === 0
+                                                                        ? "#00aa00"
+                                                                        : "#d20000"
+                                                                }}>{execResult['exitCode']}</b></Typography> :
+                                                        <Typography style={{marginTop: 10}} variant={'h6'}>
+                                                            <b style={{color: "#d20000"}}>{execResult['status']}</b>
+                                                        </Typography>
+                                                }
                                             </>
                                         }
                                     </div>
@@ -813,7 +843,7 @@ export default function Workspace({currentProjectInfoSetter, isAuthorizedSetter}
                                     value={argsInput}
                                     onChange={event => setArgsInput(event.target.value)}
                                 />
-                                <div className={'d-flex flex-row justify-content-around w-75'}>
+                                <div className={'d-flex flex-row-reverse justify-content-around w-75'}>
                                     <Button
                                         variant={'contained'}
                                         type={'button'}
@@ -857,10 +887,20 @@ export default function Workspace({currentProjectInfoSetter, isAuthorizedSetter}
                         >
                             <div>
                                 <ModalCloseIcon closeFunction={() => setHistoryOpen(false)}/>
-                                <div className={'bg-white p-4 d-flex flex-column align-items-center gap-4'}
+                                <div className={'bg-white p-3 d-flex flex-column gap-4'}
                                      style={{overflowY: "scroll", maxHeight: 800}}>
                                     <h1 style={{textAlign: "center"}}>История изменений</h1>
-                                    <DiffList projectUUID={projectUUID} fileId={selectedFile['id']}/>
+                                    <DiffList
+                                        canRestore={(projectRole && !['COMMENTER', 'WATCHER'].includes(projectRole['projectRole']))}
+                                        projectUUID={projectUUID}
+                                        fileId={selectedFile['id']}
+                                        restoreHandler={newCode => {
+                                            codeGenerateHandler({
+                                                'replace': true,
+                                                'source': 'diff',
+                                                'code': newCode})
+                                        }}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -897,7 +937,11 @@ export default function Workspace({currentProjectInfoSetter, isAuthorizedSetter}
 };
 
 function codeGenAvailable(fileName) {
-    return fileName.endsWith('.java') || fileName.endsWith('/pom.xml') || fileName === 'pom.xml';
+    return (
+        fileName.endsWith('.java')
+            // || fileName.endsWith('/pom.xml')
+            // || fileName === 'pom.xml'
+    );
 }
 
 function filesToTree(files) {

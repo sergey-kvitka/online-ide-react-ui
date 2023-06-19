@@ -1,4 +1,4 @@
-import {Terminal} from "@mui/icons-material";
+import {AccountCircle, Logout, Terminal} from "@mui/icons-material";
 import {AppBar, Link, Toolbar, Typography} from "@mui/material";
 import {useEffect, useState} from "react";
 
@@ -10,10 +10,12 @@ export default function Header({currentProjectInfo, isAuthorized}) {
     const [headerText, setHeaderText] = useState(defaultText);
     const [page, setPage] = useState('');
     const [projectUUID, setProjectUUID] = useState(null);
+    const [userInfo, setUserInfo] = useState(null);
 
     useEffect(() => {
         if (!currentProjectInfo) return;
         setHeaderText(textByProjectInfo(currentProjectInfo));
+        setUserInfo(currentProjectInfo['user']);
     }, [currentProjectInfo]);
 
     function textByProjectInfo(currentProjectInfo) {
@@ -75,12 +77,28 @@ export default function Header({currentProjectInfo, isAuthorized}) {
                         style={{marginRight: '3vw'}}
                     >Мои проекты</Link>
                     : <></>}
+                {(isAuthorized && userInfo) ? <>
+                    <div
+                        className={'d-flex flex-row align-items-center'}
+                        title={userInfo['userNames']['username']}
+                    >
+                        <AccountCircle fontSize={"large"}/>
+                        <div
+                            className={'d-flex flex-column align-items-start'}
+                            style={{fontSize: 20, margin: '0 10px', maxWidth: 240, overflow: 'hidden'}}
+                        >
+                            <span style={{width: '100%', textAlign: 'center'}}>{userInfo['userNames']['firstName']}</span>
+                            <span style={{width: '100%', textAlign: 'center'}}>{userInfo['userNames']['lastName']}</span>
+                        </div>
+                    </div>
+                </> : <></>}
                 {isAuthorized
                     ? <Link
                         className={'no-style-link'}
                         href={'/login'}
-                        style={{marginRight: '1.5vw'}}
-                    >Выйти</Link>
+                        style={{marginLeft: '1vw'}}
+                        title={'Выйти'}
+                    ><Logout fontSize={'large'}/></Link>
                     : <></>}
             </Toolbar>
         </AppBar>

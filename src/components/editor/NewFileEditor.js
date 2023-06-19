@@ -10,6 +10,8 @@ import {CircularProgress} from "@mui/material";
 
 const SAVE_INTERVAL_MS = 500;
 
+const SAVE_CHANGE_INTERVAL_S = 30;
+
 export default function NewFileEditor({
                                           documentId,
                                           projectUUID,
@@ -32,8 +34,11 @@ export default function NewFileEditor({
     const [codeBefore, setCodeBefore] = useState(null);
     const [dateBefore, setDateBefore] = useState(null);
 
+    const [_30s, set_30S] = useState(0);
+
     function editorDidMount(editor, _) {
         editor.focus();
+
     }
 
     useEffect(() => {
@@ -44,7 +49,13 @@ export default function NewFileEditor({
         resetCodeGenerateOptions();
     }, [codeGenerateOptions, codeLoaded]);
 
-    useEffect(() => pathHandler(filePath), []);
+    useEffect(() => {
+        pathHandler(filePath);
+        const interval = setInterval(() => {
+            set_30S(prev => prev + 1);
+        }, 1000 * SAVE_CHANGE_INTERVAL_S);
+        return () => clearInterval(interval);
+    }, []);
 
     useEffect(() => {
         if (codeUpdated === 0 || !socket || !codeLoaded || !documentId) return;
@@ -66,8 +77,6 @@ export default function NewFileEditor({
     useEffect(() => { // ! receiving changes from socket
         if (!socket || !codeLoaded || (codeBefore === null) || !dateBefore) return;
         const handler = newValue => {
-            // console.log('receiving changes');
-            let x = (code === codeBefore);
             saveDifference(codeBefore, code, dateBefore, projectUUID, documentId);
             setCode(newValue);
             saveBefore(newValue);
@@ -101,6 +110,13 @@ export default function NewFileEditor({
         const handler = () => {
             saveDifference(codeBefore, code, dateBefore, projectUUID, documentId);
         };
+
+        if (_30s !== 0) {
+            saveDifference(codeBefore, code, dateBefore, projectUUID, documentId);
+            saveBefore(code);
+            set_30S(0);
+        }
+
         window.addEventListener('unload', handler);
         window.addEventListener('beforeunload', handler);
 
@@ -108,7 +124,7 @@ export default function NewFileEditor({
             window.removeEventListener('unload', handler);
             window.removeEventListener('beforeunload', handler);
         };
-    }, [code, codeBefore, dateBefore, codeLoaded]);
+    }, [code, codeBefore, dateBefore, codeLoaded, _30s]);
 
     function saveBefore(code) {
         // console.log('save before');
@@ -117,11 +133,11 @@ export default function NewFileEditor({
     }
 
     function saveDifference(codeBefore, codeAfter, dateBefore, projectUUID, documentId) {
-        // console.log('trying save after');
+        console.log('trying save after');
         if (codeAfter === codeBefore) {
             return;
         }
-        // console.log('continue save after');
+        console.log('continue save after');
         fetch(Methods.getIdeApiURL('codeDiff/save'), {
             headers: {'Content-Type': 'application/json', 'Authorization': jwt},
             method: 'PUT',
@@ -138,6 +154,7 @@ export default function NewFileEditor({
     }
 
     return codeLoaded ? <MonacoEditor
+        // onBlur={() => console.log("hello")}
         value={code}
         language={languageFromExtension(getExtension(filePath))}
         options={{
@@ -163,6 +180,10 @@ const languageFromExtension = extension => {
     const _extension = extension.toLowerCase();
     return {
         'java': 'java',
-        'xml': 'xml'
+        'xml': 'xml',
+        'js': 'javascript',
+        'html': 'html',
+        'yml': 'yaml',
+        'yaml': 'yaml'
     }[_extension];
 }

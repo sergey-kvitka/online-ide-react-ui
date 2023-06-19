@@ -154,7 +154,7 @@ export default function UserSearch({projectUsers, addProjectUser, myProjectRole,
                             <DefaultCopyField
                                 label="Нажмите на иконку справа, чтобы скопировать ссылку"
                                 fullWidth className={'b-i-input'}
-                                value={`http://localhost:3010/project/${projectUUID}/info`}/>
+                                value={`${Constants.SELF_URL}/project/${projectUUID}/info`}/>
                         </div>
                         {/* todo hardcoded localhost link */}
 

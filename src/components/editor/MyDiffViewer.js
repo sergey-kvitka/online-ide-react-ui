@@ -7,7 +7,7 @@ const highlightSyntax = str => (
         style={{display: 'inline'}}
 
         dangerouslySetInnerHTML={{
-            __html: Prism.highlight(str, Prism.languages.javascript, 'javascript'), // ! JS for test
+            __html: Prism.highlight(str ? str : '', Prism.languages.javascript, 'javascript'), // ! JS for test
         }}
     />
 );
@@ -19,7 +19,7 @@ export default function MyDiffViewer({code1, code2}) {
     return <div className={'diff-view'}>
         <ReactDiffViewer oldValue={code1} newValue={code2}
                          compareMethod={DiffMethod.WORDS_WITH_SPACE}
-                         splitView={false}
+                         splitView={true}
                          renderContent={highlightSyntax} //TODO not working
         />
     </div>;
